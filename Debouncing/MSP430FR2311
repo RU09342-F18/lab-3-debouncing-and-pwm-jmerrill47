@@ -1,0 +1,38 @@
+#include <msp430.h> 
+
+int main(void)
+{
+    WDTCTL = WDTPW | WDTHOLD;           // Stop watchdog timer
+    PM5CTL0 &= ~LOCKLPM5;               // Allows changes to port registers
+
+    P1DIR |= BIT0;                      // Sets P1.0 to be an output
+    P1DIR &= ~BIT1;                     // Sets P1.1 to an input
+    P1REN |= BIT1;                      // Enables the resistor in P1.3
+    P1OUT |= BIT1;                      // Sets the pull down resistor
+
+    CSCTL4 = SELA_1;                    // Sets ACLK to run at 32 kHz
+    TB0CCR0 = 200;                      // Sets Capture/Compare register to be initially 200
+
+    P1IE |= BIT1;                       // Enables button to cause interrupt
+    P1IES |= BIT1;                      // Sets the edge for the interrupt to falling edge
+    P1IFG &= ~BIT1;                     // Clears the interrupt flag
+
+    __bis_SR_register(GIE);             // enables interrupt
+    while(1);                           // infinite loop
+}
+
+#pragma vector = PORT1_VECTOR
+__interrupt void Port_1(void)           // Button Pressed
+{
+    TB0CTL = TBSSEL_1 + MC_1 + TBCLR + TBIE;    // Run timer B that's in Up Mode, ACLK and the clock is cleared
+    P1IES ^= BIT1;                      // Toggle edge select for Button interrupt
+    P1IFG &= ~BIT1;                     // Clears interrupt flags
+}
+#pragma vector=TIMER0_B1_VECTOR
+__interrupt void TIMER0_B0(void)        //Timer B interrupt
+{
+    if(P1IN & BIT1)                     // Make sure the button is pressed
+        P1OUT ^= BIT0;                  // Toggle LED
+
+    TB0CTL = MC_0;                      // Set timer to stop
+}
