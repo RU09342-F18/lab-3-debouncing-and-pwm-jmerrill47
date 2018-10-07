@@ -1,0 +1,35 @@
+#include <msp430.h> 
+
+int main(void)
+{
+    WDTCTL = WDTPW | WDTHOLD;           // Stop watchdog timer
+    BCSCTL3 = LFXT1S_2;                 // Tell the MC to activate the internal crystal
+    P1DIR |= BIT0;                      // Sets P1.0 to be an output
+    P1REN |= BIT3;                      // Enables the resistor in P1.3
+    P1OUT |= BIT3;                      // Sets the pull down resistor
+
+    TA0CCTL0 = CCIE;                    // Enables interrupt
+    TA0CCR0 = 3500;                     // Sets Capture/Compare register to be initially 1000
+    P1IE |= BIT3;                       // Enables button to cause interrupt
+    P1IES |= BIT3;                      // Sets the edge for the interrupt to falling edge
+    P1IFG &= ~BIT3;                     // Clears the interrupt flag
+
+    __bis_SR_register(GIE);             // enables interrupt
+    while(1);                           // infinite loop
+}
+
+#pragma vector = PORT1_VECTOR
+__interrupt void Port_1(void)           // Button Pressed
+{
+    P1OUT ^= BIT0;                      // Toggle LED
+    P1IE &= ~BIT3;                      // Disable button's ability to cause interrupt
+    TA0CTL = TASSEL_1 + MC_1;           // Create a timer A instance that's in Up Mode and running ACLK
+}
+#pragma vector=TIMER0_A0_VECTOR
+__interrupt void TIMER0_A0(void)        //Timer A interrupt
+{
+    P1IE |= BIT3;
+    TA0CTL = MC_0;                      // Turns off Clock
+    TA0CTL = TACLR;                     // Clears the timer
+    P1IFG &= ~BIT3;                     // Clears the interrupt flag
+}
