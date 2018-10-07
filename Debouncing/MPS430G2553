@@ -6,7 +6,7 @@ int main(void)
     BCSCTL3 = LFXT1S_2;                 // Tell the MC to activate the internal crystal
     P1DIR |= BIT0;                      // Sets P1.0 to be an output
     P1REN |= BIT3;                      // Enables the resistor in P1.3
-    P1OUT |= BIT3;                      // Sets the pull down resistor
+    P1OUT |= BIT3;                      // Sets the pull up resistor
 
     TA0CCTL0 = CCIE;                    // Enables interrupt
     TA0CCR0 = 3500;                     // Sets Capture/Compare register to be initially 1000
