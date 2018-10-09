@@ -1,0 +1,54 @@
+#include <msp430fr2311.h>
+
+int main(void) {
+    WDTCTL = WDTPW + WDTHOLD;               // Disable the Watchdog timer
+    PM5CTL0 &= ~LOCKLPM5;                   // Allows changes to port registers
+
+    P2DIR |= BIT0;                          // sets P2.0 (Green LED) to output
+    P1DIR |= BIT0;                          // Sets P1.0 (Red LED) to output
+    P1OUT &= ~BIT0;                         // Red LED is initially off
+    P2SEL0 |= BIT0;                         // Set P2.0 (Green LED) to be controlled PWM when select bit = 0
+    P2SEL1 &= ~BIT0;                        // Set P2.0 (Green LED) to be controlled PWM when select bit = 1    
+
+    P1DIR &= ~BIT1;                         // set P1.1 (Button) as input
+    P1IE |=  BIT1;                          // Enable interrupt for P1.1
+    P1IES |= BIT1;                          // Trigger Interrupt on falling edge
+
+    P1REN |= BIT1;                          // Enable the resistor on P1.1
+    P1OUT |= BIT1;                          // Set as a pull up resistor
+    P1IFG &= ~BIT1;                         // clear flags
+
+    TB1CCR0 = 1000;                         // Set Period of PWM, Multiple of 10 for easy divisions
+    TB1CCTL1 = OUTMOD_7;                    // Set PWM to the reset/set mode
+    TB1CCR1 = 100;                          // Set duty cycle to be initially 10%
+    TB1CTL = TBSSEL_2 + MC_1 + ID_2;        // Create a clock using SMCLK, Up Mode and divide by 4
+
+    __bis_SR_register(GIE);                 // Enable Interrupts
+    while(1);                               // Infinite Loop
+}
+
+#pragma vector =PORT1_VECTOR                // Button interrupt
+__interrupt void PORT1(void)
+{
+    if (P1IES & BIT1)                       // Detect the button being pressed
+    {
+        P1OUT ^= BIT0;                      // Toggle Red LED
+        P1IES &= ~BIT1;                     // Change edge to detect rising edge
+    }
+    else                                    // If falling edge isn't detected (rising edge)
+    {
+        P1OUT &= ~BIT0;                     // Toggle Red LED
+        P1IES |= BIT1;                      // Change edge to detect falling edge
+    }
+
+    if(TB1CCR1 < 1000 && TB1CCR1 >= 0)      // If CCR1 is in the proper range
+    {
+        TB1CCR1 +=100;                      // Increase duty cycle by 10%
+    }
+    else                                    // If CCR1 is outside the proper range
+    {
+        TB1CCR1 = 100;                      // Set duty cycle to 10%
+    }
+
+    P1IFG &= ~BIT1;                         //clear interrupt flags
+}
