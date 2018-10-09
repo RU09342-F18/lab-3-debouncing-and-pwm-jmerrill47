@@ -15,9 +15,9 @@ int main(void) {
     P1OUT |= BIT3;                          // Set as a pull up resistor
     P1IFG &= ~BIT3;                         // clear flags
 
-    TA0CCR0 = 1000;                         // Set Period of PWM, Multiple of 10 for easy divisions
+    TA0CCR0 = 1000;                         // Set Period of PWM, Multiple of 10 for easy divisionsd
     TA0CCTL1 = OUTMOD_7;                    // Set PWM to the reset/set mode
-    TA0CCR1 = 100;                          // Set duty cycle to be initially 10%
+    TA0CCR1 = 500;                          // Set duty cycle to be initially 50%
     TA0CTL = TASSEL_2 + MC_1 + ID_2;        // Create a clock using SMCLK, Up Mode and divide by 4
 
     __bis_SR_register(GIE);                 // Enable Interrupts
