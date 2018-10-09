@@ -34,7 +34,7 @@ __interrupt void PORT1(void)
     }
     else                                    // If falling edge isn't detected (rising edge)
     {
-    P1OUT &= ~BIT0;                         // Toggle Red LED
+    P1OUT ^= BIT0;                         // Toggle Red LED
     P1IES |= BIT3;                          // Change edge to detect falling edge
     }
 
