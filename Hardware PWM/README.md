@@ -1,18 +1,5 @@
 # Hardware PWM
-Now that you have done the software version of PWM, now it is time to start leveraging the other features of these Timer Modules.
+This program behaves in the same way the Software PWM does.  The only difference is that it uses the built in PWM from a GPIO pin.
 
-## Task
-You need to replicate the same behavior as in the software PWM, only using the Timer Modules ability to directly output to a GPIO Pin instead of managing them in software. One way to thing about what should happen is that unless your are doing some other things in your code, your system should initialize, set the Timer Modules, and then turn off the CPU.
-
-## Deliverables
-You will need to have two folders in this repository, one for each of the processors that you used for this part of the lab. Remember to replace this README with your own.
-
-### Hints
-Read up on the P1SEL registers as well as look at the Timer modules ability to multiplex.
-
-## Extra Work
-### Using ACLK
-Some of these microprocessors have a built in ACLK which is extremely slow compared to your up to 25MHz available on some of them. What is the overall impact on the system when using this clock? Can you actually use your PWM code with a clock that slow?
-
-### Ultra Low Power
-Using a combination of ACLK, Low Power Modes, and any other means you may deem necessary, optimize this PWM code to run at 50% duty cycle with a LED on the MSP430FR5994. In particular, time how long your code can run on the fully charged super capacitor. You do not need to worry about the button control in this case, and you will probably want to disable all the GPIO that you are not using (nudge, nudge, hint, hint).
+## Step by Step Process
+The main(void) portion of the program is very similar to the Software PWM program with changes only to the clocks.  For this time, CCR0 is set to 1000 to run at 1 kHz with CCR1 being 500 (the duty cycle is 50% initially). To activate the internal PWM, OUTMOD_7 needs to be set to the capture/control trigger.  OUTMOD_7 means that the internal PWM is set to the reset/set mode meaning that the PWM is toggle by both the timer interrupt flags and the capture/compare interrupt flags. The clock instiated is the SMCLK in Up mode with a clock divider of 4.  Since there's a built in PWM, there only need for 1 interrupt which is controlled by the button.  This interrupt includes the same code as the Software PWM except for the boundaries of the CCR1 clock but it still increases by 10% as long as CCR1 is inside the proper bounds.
