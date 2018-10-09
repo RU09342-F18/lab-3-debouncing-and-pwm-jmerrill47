@@ -1,0 +1,66 @@
+#include <msp430fr2311.h>
+
+int main(void)
+{
+    WDTCTL = WDTPW + WDTHOLD;               // Disable the Watchdog timer
+    PM5CTL0 &= ~LOCKLPM5;                   // Allows changes to port registers
+    P2DIR |= BIT0;                          // sets P2.0 (Green LED) to output
+    P1DIR |= BIT0;                          // Sets P1.0 (Red LED) to output
+    P1OUT &= ~BIT0;                         // Red LED is initially off
+
+    P1DIR &= ~BIT1;                         // set P1.1 (Button) as input
+    P1IE |=  BIT1;                          // Enable interrupt for P1.1
+    P1IES |= BIT1;                          // Trigger Interrupt on falling edge
+
+    P1REN |= BIT1;                          // Enable the resistor on P1.1
+    P1OUT |= BIT1;                          // Set as a pull up resistor
+    P1IFG &= ~BIT1;                         // clear flags
+
+    TB0CCR0 = 255;                          // Set the total period
+    TB0CCR1 = 25;                           // Set the duty cycle to 10% initially
+    TB0CCTL1 = CCIE;                        // Enable the capture/control interrupt
+
+    TB0CTL = TBSSEL_2 + MC_1 + ID_2 + TBIE; // Create instance of SMCLK, Up Mode, divided by 4 and interrupt enabled
+
+    __bis_SR_register(GIE);                 // enable global interrupt
+    while(1);                               // infinite loop
+}
+
+#pragma vector =PORT1_VECTOR
+__interrupt void PORT1(void)
+{
+    if (P1IES & BIT1)                       // If the falling edge detected
+    {
+        P1OUT ^= BIT0;                      // Toggle Red LED (Signify button is pressed)
+        P1IES &= ~BIT1;                     // Switch interrupt to rising edge
+    }
+    else                                    // Else (rising edge is detected)
+    {
+        P1OUT ^= BIT0;                      // Toggle Red LED (Signify button is released)
+        P1IES |= BIT1;                      // Switch interrupt to falling edge
+    }
+
+    if(TB0CCR1 < 255 && TB0CCR1 >= 0)       //if CCR1 is between 0 and 255
+    {
+        TB0CCR1 +=25;                       //increase duty cycle by 10%
+    }
+    else                                    //if duty cycle is 100%
+    {
+        TB0CCR1 = 0;                        //reset duty cycle
+    }
+
+    P1IFG &= ~BIT1;                         //Clear interrupt flags
+}
+
+#pragma vector = TIMER0_B1_VECTOR           //timer interrupt vector
+__interrupt void TIMER0_B0(void)
+{
+    switch(TB0IV)                           //switch case for timer0 A interrupt vector
+      {
+        case  2:  P2OUT &= ~BIT0;           // Uses CCR1 to tell the LED when to turn off LED
+                  break;
+        case  4:  break;                    // CCR2 is not used
+        case 0x0E:  P2OUT |= BIT0;            // When the timer goes over period length, turn on LED
+                  break;
+      }
+}
