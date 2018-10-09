@@ -1,0 +1,51 @@
+#include <msp430g2553.h>
+
+int main(void) {
+    WDTCTL = WDTPW + WDTHOLD;               // Disable the Watchdog timer
+    P1DIR |= BIT6;                          // sets P1.6 (Green LED) to output
+    P1DIR |= BIT0;                          // Sets P1.0 (Red LED) to output
+    P1OUT &= ~BIT0;                         // Red LED is initially off
+    P1SEL |= BIT6;                          // Set P1.6 (Green LED) to be controlled PWM
+
+    P1DIR &= ~BIT3;                         // set P1.3 (Button) as input
+    P1IE |=  BIT3;                          // Enable interrupt for P1.3
+    P1IES |= BIT3;                          // Trigger Interrupt on falling edge
+
+    P1REN |= BIT3;                          // Enable the resistor on P1.3
+    P1OUT |= BIT3;                          // Set as a pull up resistor
+    P1IFG &= ~BIT3;                         // clear flags
+
+    TA0CCR0 = 1000;                         // Set Period of PWM, Multiple of 10 for easy divisions
+    TA0CCTL1 = OUTMOD_7;                    // Set PWM to the reset/set mode
+    TA0CCR1 = 100;                          // Set duty cycle to be initially 10%
+    TA0CTL = TASSEL_2 + MC_1 + ID_2;        // Create a clock using SMCLK, Up Mode and divide by 4
+
+    __bis_SR_register(GIE);                 // Enable Interrupts
+    while(1);                               // Infinite Loop
+}
+
+#pragma vector =PORT1_VECTOR                // Button interrupt
+__interrupt void PORT1(void)
+{
+    if (P1IES & BIT3)                       // Detect the button being pressed
+    {
+    P1OUT ^= BIT0;                          // Toggle Red LED
+    P1IES &= ~BIT3;                         // Change edge to detect rising edge
+    }
+    else                                    // If falling edge isn't detected (rising edge)
+    {
+    P1OUT &= ~BIT0;                         // Toggle Red LED
+    P1IES |= BIT3;                          // Change edge to detect falling edge
+    }
+
+    if(TA0CCR1 < 1000 && TA0CCR1 >= 0)      // If CCR1 is in the proper range
+    {
+    TA0CCR1 +=100;                          // Increase duty cycle by 10%
+    }
+    else                                    // If CCR1 is outside the proper range
+    {
+        TA0CCR1 = 100;                      // Set duty cycle to 10%
+    }
+
+    P1IFG &= ~BIT3;                         //clear interrupt flags
+}
