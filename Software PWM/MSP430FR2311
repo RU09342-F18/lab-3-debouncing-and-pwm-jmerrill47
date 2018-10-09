@@ -17,7 +17,7 @@ int main(void)
     P1IFG &= ~BIT1;                         // clear flags
 
     TB0CCR0 = 255;                          // Set the total period
-    TB0CCR1 = 25;                           // Set the duty cycle to 10% initially
+    TB0CCR1 = 127;                          // Set the duty cycle to 50% initially
     TB0CCTL1 = CCIE;                        // Enable the capture/control interrupt
 
     TB0CTL = TBSSEL_2 + MC_1 + ID_2 + TBIE; // Create instance of SMCLK, Up Mode, divided by 4 and interrupt enabled
