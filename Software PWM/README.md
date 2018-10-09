@@ -1,33 +1,5 @@
 # Software PWM
-Most microprocessors will have a Timer module, but depending on the device, some may not come with pre-built PWM modules. Instead, you may have to utilize software techniques to synthesize PWM on your own.
+For this lab activity, rather then using the built in PWM on the Dev boards, a software PWM was built.  This PWM controlled the brightness of an LED on the Dev Boards with the duty cycle incrementing by 10% each time the button was pressed.  Once the duty cycle equals 100%, with the next button press, the duty cycle would go back to 0%. To signify the button being pressed, the other LED would flash for testing purposes.
 
-## Task
-You need to generate a 1kHz PWM signal with a duty cycle between 0% and 100%. Upon the processor starting up, you should PWM one of the on-board LEDs at a 50% duty cycle. Upon pressing one of the on-board buttons, the duty cycle of the LED should increase by 10%. Once you have reached 100%, your duty cycle should go back to 0% on the next button press. You also need to implement the other LED to light up when the Duty Cycle button is depressed and turns back off when it is let go. This is to help you figure out if the button has triggered multiple interrupts.
-
-## Deliverables
-You will need to have two folders in this repository, one for each of the processors that you used for this part of the lab. Remember to replace this README with your own.
-
-### Hints
-You really, really, really, really need to hook up the output of your LED pin to an oscilloscope to make sure that the duty cycle is accurate. Also, since you are going to be doing a lot of initialization, it would be helpful for all persons involved if you created your main function like:
-
-```c
-int main(void)
-{
-	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
-	LEDSetup(); // Initialize our LEDS
-	ButtonSetup();  // Initialize our button
-	TimerA0Setup(); // Initialize Timer0
-	TimerA1Setup(); // Initialize Timer1
-	__bis_SR_register(LPM0_bits + GIE);       // Enter LPM0 w/ interrupt
-}
-```
-
-This way, each of the steps in initialization can be isolated for easier understanding and debugging.
-
-
-## Extra Work
-### Linear Brightness
-Much like every other things with humans, not everything we interact with we perceive as linear. For senses such as sight or hearing, certain features such as volume or brightness have a logarithmic relationship with our senses. Instead of just incrementing by 10%, try making the brightness appear to change linearly.
-
-### Power Comparison
-Since you are effectively turning the LED off for some period of time, it should follow that the amount of power you are using over time should be less. Using Energy Trace, compare the power consumption of the different duty cycles. What happens if you use the pre-divider in the timer module for the PWM (does it consume less power)?
+## Step by Step Process
+First, the watchdog timer was stopped and all the proper parameters where set (both LEDs were set to the output direction, the button was set to the input direction, the button interrupt was enabled and set to the falling edge, and the resistor on P1.3 was enabled and set to pull up). Next the total period for the PWM was set using CCR0.  Since the program required the duty cycle to be 50% initially, CCR1 (which controls the duty cycle) was set to half of CCR0.  After this, the capture/control interrupt was enabled, the clock controlling CCR0 and CCR1 was instantiated and global interrupts were enabled.  With all of these intial conditions out of the way, the inerrupt modules were created.  The first module was the button based interrupt. In this function it toggled the Red LED (not controlled by the PWM) on and off while the button was pressed an released.  This interrupt also had an if else statement stating that if CCR1 (duty cycle) was in the proper bounds, it was by incremented by 10%.  If it was outside (meaning it was at 100% duty cycle) it was reset back to 0 on the next interrupt trigger (button press). Lastly the interrupt flags were cleared.  The last part of the lab was the Timer interrupt which acted as a PWM.  For this, a switch statement was created with the interrupt vector for the timer.  In this switch statement, only two cases matter (case 2 and 10).  These statements controlled what should happen when the CCR1 is off (in the period) and on, respectively.   
